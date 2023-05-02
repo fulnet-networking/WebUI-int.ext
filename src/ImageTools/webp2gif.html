@@ -12,15 +12,16 @@
     <button id="convert-button">Convert to GIF</button>
     <br />
     <canvas id="canvas"></canvas>
+    <progress id="progress-bar" value="0" max="100"></progress>
     <script>
       var inputElement = document.getElementById("image-upload");
       var canvasElement = document.getElementById("canvas");
       var convertButton = document.getElementById("convert-button");
+      var progressBar = document.getElementById("progress-bar");
 
       inputElement.addEventListener("change", function (event) {
         var file = event.target.files[0];
         var reader = new FileReader();
-// allow users to upload their own files with a UI
         reader.onload = function (event) {
           var image = new Image();
           image.onload = function () {
@@ -36,12 +37,10 @@
       convertButton.addEventListener("click", function () {
         var image = new Image();
         image.onload = function () {
-// create a new gif
-            var gif = new GIF({
+          var gif = new GIF({
             workers: 2,
             quality: 10,
           });
-// grab frames from webp and copy to NewGif
           var frames = new AnimatedImage(image);
           frames.decode().then(function () {
             for (var i = 0; i < frames.length; i++) {
@@ -49,7 +48,10 @@
                 delay: frames.getDuration(i),
               });
             }
-// Render the new gif frames onto the canvas
+            gif.on("progress", function (progress) {
+              // Update the progress bar value
+              progressBar.value = Math.round(progress * 100);
+            });
             gif.on("finished", function (blob) {
               var url = URL.createObjectURL(blob);
               var gifImage = new Image();
@@ -62,7 +64,6 @@
               saveAs(blob, "animation.gif");
               URL.revokeObjectURL(url);
             });
-// Start Rendering
             gif.render();
           });
         };
